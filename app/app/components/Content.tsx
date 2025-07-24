@@ -13,6 +13,7 @@ import type {
 import DisplayGroupNode from "./DisplayGroupNode";
 import TokenSetNode from "./TokenSetNode";
 import ValueContent from "./ValueContent";
+import ComponentTile from "./ComponentTile";
 
 // --- Type Definitions for Props ---
 
@@ -232,20 +233,36 @@ const Content: React.FC<ContentProps> = ({
           />
         )}
 
-        {activeTab !== "system" &&
-          activeTab !== "tokens" &&
-          (displayData.length > 0 ? (
-            <ItemList
-              items={displayData}
-              activeTab={activeTab}
-              onItemSelect={onItemSelect}
-            />
-          ) : (
-            <p className="text-center text-gray-500 mt-10">
-              No items found for "{tabTitle}"
-              {searchTerm && ` matching "${searchTerm}"`}.
-            </p>
-          ))}
+        {activeTab !== "system" && activeTab !== "tokens" && (
+          <>
+            {displayData.length > 0 ? (
+              <>
+                {activeTab === "components" ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {(displayData as Component[]).map((component) => (
+                      <ComponentTile
+                        key={component.name}
+                        component={component}
+                        onSelect={(item) => onItemSelect(item, activeTab)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <ItemList
+                    items={displayData}
+                    activeTab={activeTab}
+                    onItemSelect={onItemSelect}
+                  />
+                )}
+              </>
+            ) : (
+              <p className="text-center text-gray-500 mt-10">
+                No items found for "{tabTitle}"
+                {searchTerm && ` matching "${searchTerm}"`}.
+              </p>
+            )}
+          </>
+        )}
       </div>
     </section>
   );

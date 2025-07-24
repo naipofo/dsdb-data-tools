@@ -60,7 +60,6 @@ const App: React.FC = () => {
   const handleTabChange = useCallback((tab: string) => {
     setActiveTab(tab);
     setSearchTerm("");
-    setSelectedItem(null);
   }, []);
 
   const handleItemSelect = useCallback((item: DisplayableItem, tab: string) => {
@@ -253,7 +252,10 @@ const App: React.FC = () => {
         system={system}
         dataCounts={dataCounts}
         selectedComponent={selectedComponent}
-        onClearComponentFilter={() => setSelectedComponent(null)}
+        onClearComponentFilter={() => {
+          setSelectedComponent(null);
+          setSelectedItem(null);
+        }}
         selectedItem={selectedItem}
         onClearSelection={() => setSelectedItem(null)}
       />
