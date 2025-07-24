@@ -151,6 +151,7 @@ interface ReferenceNode {
 }
 
 interface ContextualReference {
+  contextTags: string[];
   referenceTree: ReferenceNode;
   resolvedValue: ResolvedValue;
 }
@@ -204,46 +205,52 @@ export const rgbToHex = (r?: number, g?: number, b?: number): string => {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 };
 
-export interface ResolvedTokenInfo {
+export interface ContextualResolution {
+  contextTags: string[];
   resolvedValue: ResolvedValue | null;
-  resolutionChain: string[];
+  resolutionChain: { name: string }[];
 }
 
 /**
- * Resolves a token's value and its resolution chain from the contextual reference trees.
+ * Resolves all contextual values for a token and its resolution chains.
  * @param token - The token to resolve.
  * @param allContextualReferenceTrees - A map of all contextual reference trees.
- * @returns An object containing the resolved value and the resolution chain.
+ * @returns An array of objects, each containing the resolved value, context, and resolution chain.
  */
 export const resolveTokenAndChain = (
   token: Token,
   allContextualReferenceTrees: Record<string, ContextualReferenceTree>
-): ResolvedTokenInfo => {
+): ContextualResolution[] => {
   const crtEntry = allContextualReferenceTrees[token.name];
   if (
     !crtEntry ||
     !crtEntry.contextualReferenceTree ||
     crtEntry.contextualReferenceTree.length === 0
   ) {
-    return { resolvedValue: null, resolutionChain: [] };
+    return [];
   }
 
-  const primaryRefTree = crtEntry.contextualReferenceTree[0];
-  const resolvedValue = primaryRefTree.resolvedValue;
-  const resolutionChain: string[] = [];
+  return crtEntry.contextualReferenceTree.map((contextualReference) => {
+    const resolvedValue = contextualReference.resolvedValue;
+    const resolutionChain: { name: string }[] = [];
 
-  const buildChain = (node: ReferenceNode) => {
-    if (node && node.value && node.value.name) {
-      resolutionChain.push(node.value.name);
-      if (node.childNodes) {
-        node.childNodes.forEach(buildChain);
+    const buildChain = (node: ReferenceNode) => {
+      if (node && node.value && node.value.name) {
+        resolutionChain.push({ name: node.value.name });
+        if (node.childNodes) {
+          node.childNodes.forEach(buildChain);
+        }
       }
+    };
+
+    if (contextualReference.referenceTree) {
+      buildChain(contextualReference.referenceTree);
     }
-  };
 
-  if (primaryRefTree.referenceTree) {
-    buildChain(primaryRefTree.referenceTree);
-  }
-
-  return { resolvedValue, resolutionChain };
+    return {
+      contextTags: contextualReference.contextTags,
+      resolvedValue,
+      resolutionChain,
+    };
+  });
 };

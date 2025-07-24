@@ -1,5 +1,11 @@
-import React from "react";
-import type { DSDBSystem, ResolvedValue, Token, Value } from "../utils/dsdb";
+import React, { useCallback } from "react";
+import type {
+  ContextualResolution,
+  DSDBSystem,
+  ResolvedValue,
+  Token,
+  Value,
+} from "../utils/dsdb";
 import { rgbToHex } from "../utils/dsdb";
 
 // A small component to render the color swatch.
@@ -38,8 +44,7 @@ const ChainNode: React.FC<{
 };
 
 interface ResolutionChainProps {
-  chain: string[]; // A list of Value object `name` properties
-  finalResolvedValue: ResolvedValue | null;
+  chain: ContextualResolution[];
   system: DSDBSystem | null;
   renderValueContent: (resolvedValue: ResolvedValue) => React.ReactNode;
 }
@@ -66,73 +71,104 @@ const Arrow = () => (
 // The main component to display the entire resolution chain.
 const ResolutionChain: React.FC<ResolutionChainProps> = ({
   chain,
-  finalResolvedValue,
   system,
   renderValueContent,
 }) => {
-  // A simple view for when we just have a value but no chain.
-  const FinalValueOnly = () => (
-    <div className="mt-2">
-      <h4 className="text-xs font-semibold text-gray-600 mb-1">
-        Resolved Value
-      </h4>
-      {finalResolvedValue ? (
-        <div className="p-2 bg-blue-50 border border-blue-200 rounded-md w-full">
-          {renderValueContent(finalResolvedValue)}
-        </div>
-      ) : (
-        <p className="text-gray-500 italic text-xs">No value resolved.</p>
-      )}
-    </div>
+  const getTagName = useCallback(
+    (tag: string) => {
+      return system?.tags.find((e) => e.name === tag)?.displayName ?? tag;
+    },
+    [system]
   );
 
   if (!system || !chain || chain.length === 0) {
-    return <FinalValueOnly />;
-  }
-
-  const resolvedChain = chain
-    .map((valueId) => {
-      const value = system.values.find((v) => v.name === valueId);
-      if (!value || !value.tokenName) {
-        return null;
-      }
-      const token = system.tokens.find((t) => t.tokenName === value.tokenName);
-      if (!token) {
-        return null;
-      }
-      return { value, token };
-    })
-    .filter(
-      (item): item is { value: Value; token: Token } =>
-        !!item && !!item.value && !!item.token
+    return (
+      <div className="mt-2">
+        <h4 className="text-xs font-semibold text-gray-600 mb-1">
+          Resolution Path
+        </h4>
+        <p className="text-gray-500 italic text-xs">
+          No resolution information available for this token.
+        </p>
+      </div>
     );
-
-  if (resolvedChain.length === 0) {
-    return <FinalValueOnly />;
   }
 
   return (
-    <div className="mt-2">
-      <h4 className="text-xs font-semibold text-gray-600 mb-2">
-        Resolution Path
-      </h4>
-      <div className="flex flex-row items-center flex-wrap gap-y-2">
-        {resolvedChain.map(({ value, token }, index) => (
-          <React.Fragment key={value.name}>
-            <ChainNode token={token} finalValue={finalResolvedValue} />
-            {index < resolvedChain.length - 1 && <Arrow />}
-          </React.Fragment>
-        ))}
+    <div className="mt-4 space-y-4">
+      {chain.map((resolution, index) => {
+        // Each `resolution` object corresponds to one context (e.g., light mode).
+        const finalResolvedValue = resolution.resolvedValue;
 
-        {finalResolvedValue && (
-          <>
-            <Arrow />
-            <div className="flex items-center p-1.5 bg-blue-100 border border-blue-200 rounded-lg w-auto">
-              {renderValueContent(finalResolvedValue)}
-            </div>
-          </>
-        )}
-      </div>
+        // The resolutionChain contains references. We need to find the corresponding
+        // value and token objects in the DSDB system data.
+        const resolvedChain = resolution.resolutionChain
+          .map((ref) => {
+            const value = system.values.find((v) => v.name === ref.name);
+            // We only care about references that are tokens (aliases).
+            // The final raw value is handled by `finalResolvedValue`.
+            if (!value || !value.tokenName) {
+              return null;
+            }
+            const token = system.tokens.find(
+              (t) => t.tokenName === value.tokenName
+            );
+            if (!token) {
+              return null;
+            }
+            return { value, token };
+          })
+          .filter((item): item is { value: Value; token: Token } => !!item);
+
+        return (
+          <div
+            key={index}
+            className="p-3 bg-gray-50/50 rounded-lg border border-gray-200"
+          >
+            {/* Display context tags if they exist */}
+            {resolution.contextTags && resolution.contextTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {resolution.contextTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-xs font-mono bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full"
+                  >
+                    {getTagName(tag)}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Render the resolution path or just the final value */}
+            {resolvedChain.length > 0 ? (
+              <div className="flex flex-row items-center flex-wrap gap-y-2">
+                {resolvedChain.map(({ value, token }, idx) => (
+                  <React.Fragment key={value.name}>
+                    <ChainNode token={token} finalValue={finalResolvedValue} />
+                    {idx < resolvedChain.length - 1 && <Arrow />}
+                  </React.Fragment>
+                ))}
+                {finalResolvedValue && (
+                  <>
+                    <Arrow />
+                    <div className="flex items-center p-1.5 bg-blue-100 border border-blue-200 rounded-lg w-auto">
+                      {renderValueContent(finalResolvedValue)}
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : finalResolvedValue ? (
+              <div className="p-2 bg-blue-50 border border-blue-200 rounded-md w-full">
+                {renderValueContent(finalResolvedValue)}
+              </div>
+            ) : (
+              <p className="text-gray-500 italic text-xs">
+                No value resolved for this context.
+              </p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };

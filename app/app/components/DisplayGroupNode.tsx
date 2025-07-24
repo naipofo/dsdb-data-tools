@@ -9,6 +9,7 @@ import type {
 } from "../utils/dsdb";
 import { resolveTokenAndChain } from "../utils/dsdb";
 import ResolutionChain from "./ResolutionChain";
+import test from "node:test";
 
 interface DisplayGroupNodeProps {
   group: DisplayGroup;
@@ -83,7 +84,7 @@ const DisplayGroupNode: React.FC<DisplayGroupNodeProps> = ({
       {isExpanded && (
         <div className="p-3 divide-y divide-gray-100">
           {tokensInGroup.map((token) => {
-            const { resolvedValue, resolutionChain } = resolveTokenAndChain(
+            const resolved = resolveTokenAndChain(
               token,
               allContextualReferenceTrees
             );
@@ -105,8 +106,7 @@ const DisplayGroupNode: React.FC<DisplayGroupNodeProps> = ({
 
                 <div className="text-sm text-gray-700 mt-2 pl-2 border-l-2 border-gray-200">
                   <ResolutionChain
-                    chain={resolutionChain}
-                    finalResolvedValue={resolvedValue}
+                    chain={resolved}
                     system={system}
                     renderValueContent={renderValueContent}
                   />
