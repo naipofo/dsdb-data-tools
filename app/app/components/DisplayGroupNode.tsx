@@ -89,11 +89,16 @@ const DisplayGroupNode: React.FC<DisplayGroupNodeProps> = ({
             );
             return (
               <div key={token.name} className="py-3 first:pt-0 last:pb-0">
-                <div className="flex justify-between items-center">
-                  <p className="font-medium text-blue-800">
-                    {token.displayName}
-                  </p>
-                  <span className="font-medium text-purple-600 text-xs bg-purple-100 px-2 py-1 rounded-full">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-medium text-blue-800">
+                      {token.displayName}
+                    </p>
+                    <p className="font-mono text-xs text-gray-500 mt-1">
+                      {token.tokenName}
+                    </p>
+                  </div>
+                  <span className="font-medium text-purple-600 text-xs bg-purple-100 px-2 py-1 rounded-full flex-shrink-0">
                     {token.tokenValueType}
                   </span>
                 </div>
