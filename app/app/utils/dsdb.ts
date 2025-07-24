@@ -9,47 +9,141 @@ export interface Color {
   alpha: number;
 }
 
-export interface Length {
-  value: number;
-  unit: string; // e.g., "DIPS"
+export interface Type {
+  fontNameTokenName: string;
+  fontWeightTokenName: string;
+  fontSizeTokenName: string;
+  fontTrackingTokenName: string;
+  lineHeightTokenName: string;
 }
 
-export interface Value {
-  name: string;
-  tokenName: string;
-  color?: Color;
-  length?: Length;
+export type ResolvedValue =
+  | { color: Color }
+  | { opacity: number }
+  | { length: Length }
+  | { shape: Shape }
+  | { type: Type }
+  | { numeric: number }
+  | { fontWeight: number }
+  | { fontNames: { values: string[] } }
+  | { fontSize: Length }
+  | { fontTracking: Length }
+  | { lineHeight: Length }
+  | { elevation: Length }
+  | { axisValue: { tag: string; value?: string } }
+  | { undefined: true };
+
+export interface Length {
+  value: number;
+  unit: "DIPS" | "PERCENT" | "POINTS";
+  // points only used in font specifiers
 }
+
+export interface ShapeDimension {
+  value?: number;
+  unit: "DIPS" | "PERCENT";
+}
+
+export interface ShapeCircular {
+  family: "SHAPE_FAMILY_CIRCULAR";
+}
+
+export interface ShapeRoundedCorners {
+  family: "SHAPE_FAMILY_ROUNDED_CORNERS";
+  defaultSize?: ShapeDimension;
+  topLeft?: ShapeDimension;
+  topRight?: ShapeDimension;
+  bottomLeft?: ShapeDimension;
+  bottomRight?: ShapeDimension;
+}
+
+export type Shape = ShapeCircular | ShapeRoundedCorners;
+
+export type Value = {
+  name: string;
+  tokenName?: string;
+  specificityScore?: number;
+  createTime: string;
+} & ResolvedValue;
 
 export interface Token {
   name: string;
   tokenName: string;
   displayName: string;
-  displayGroup: string;
-  tokenValueType: string;
+  displayGroup?: string;
+  orderInDisplayGroup?: number;
+  tokenNameSuffix: string;
+  description?: string;
+  tokenValueType:
+    | "COLOR"
+    | "OPACITY"
+    | "LENGTH"
+    | "SHAPE"
+    | "TYPOGRAPHY"
+    | "FONT_NAMES"
+    | "FONT_WEIGHT"
+    | "FONT_SIZE"
+    | "FONT_TRACKING"
+    | "LINE_HEIGHT"
+    | "ELEVATION"
+    | "AXIS_VALUE"
+    | "DURATION"
+    | "NUMERIC";
+  deprecationMessage?: {
+    message: string;
+    replacementTokenName: string;
+  };
+  createTime: string;
 }
 
 export interface DisplayGroup {
   name: string;
   displayName: string;
   parentGroup?: string;
-  orderInParentDisplayGroup: number;
+  orderInParentDisplayGroup?: number;
+  orderInParentTokenSet?: number;
+  createTime: string;
 }
 
 export interface Component {
   name: string;
   displayName: string;
+  definition: string;
   tokenSets: string[];
-  componentImage?: {
+  componentImage: {
     imageUrl: string;
   };
+  alternativeNames?: string[];
+  componentDisplayGroup?: string;
+  createTime: string;
 }
 
 export interface TokenSet {
   name: string;
   tokenSetName: string;
   displayName: string;
-  tokenType: string;
+  description?: string;
+  tokenSetNameSuffix: string;
+  tokenType: "COMPONENT";
+  order: number;
+  createTime: number;
+}
+
+export interface ContextTagGroup {
+  name: string;
+  displayName: string;
+  contextTagGroupName: string;
+  defaultTag: string;
+  specificity: number;
+  createTime: number;
+}
+
+export interface Tag {
+  name: string;
+  displayName: string;
+  tagName: string;
+  tagOrder: string;
+  createTime: string;
 }
 
 interface ReferenceNode {
@@ -57,12 +151,6 @@ interface ReferenceNode {
     name: string;
   };
   childNodes?: ReferenceNode[];
-}
-
-export interface ResolvedValue {
-  color?: Color;
-  length?: Length;
-  opacity?: number;
 }
 
 interface ContextualReference {
@@ -78,6 +166,9 @@ export interface DSDBSystem {
   name: string;
   displayName: string;
   dsdbVersion: string;
+  revisionId: string;
+  revisionCreateTime: string;
+  createTime: string;
   description: string;
   thumbnailUrl: {
     thumbnailUrl: string;
@@ -90,11 +181,8 @@ export interface DSDBSystem {
   values: Value[];
   displayGroups: DisplayGroup[];
   contextualReferenceTrees: Record<string, ContextualReferenceTree>;
-  contextTagGroups: any[];
-  tags: any[];
-  versions: any[];
-  connections: any[];
-  parentVersionsMapping: Record<string, any>;
+  contextTagGroups: ContextTagGroup[];
+  tags: Tag[];
 }
 
 export interface DSDB {
