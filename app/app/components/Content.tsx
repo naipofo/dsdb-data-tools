@@ -96,6 +96,7 @@ const TokenHierarchyView: React.FC<{
   allTokens: Token[];
   allValues: Value[];
   allContextualReferenceTrees: Record<string, ContextualReferenceTree>;
+  system: DSDBSystem | null;
 }> = ({
   selectedComponent,
   filteredTokenSets,
@@ -103,6 +104,7 @@ const TokenHierarchyView: React.FC<{
   allTokens,
   allValues,
   allContextualReferenceTrees,
+  system,
 }) => {
   if (!selectedComponent) {
     return (
@@ -131,6 +133,7 @@ const TokenHierarchyView: React.FC<{
           allTokens={allTokens}
           allValues={allValues}
           allContextualReferenceTrees={allContextualReferenceTrees}
+          system={system}
         />
       ))}
     </>
@@ -230,6 +233,7 @@ const Content: React.FC<ContentProps> = ({
             allContextualReferenceTrees={
               filteredContextualReferenceTreesByComponent
             }
+            system={system}
           />
         )}
 

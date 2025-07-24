@@ -5,12 +5,14 @@ import type {
   Value,
   ContextualReferenceTree,
   TokenSet,
+  DSDBSystem,
 } from "../utils/dsdb";
 import DisplayGroupNode from "./DisplayGroupNode";
 import ValueContent from "./ValueContent";
 
 interface TokenSetNodeProps {
   tokenSet: TokenSet;
+  system: DSDBSystem | null;
   allDisplayGroups: DisplayGroup[];
   allTokens: Token[];
   allValues: Value[];
@@ -19,6 +21,7 @@ interface TokenSetNodeProps {
 
 const TokenSetNode: React.FC<TokenSetNodeProps> = ({
   tokenSet,
+  system,
   allDisplayGroups,
   allTokens,
   allValues,
@@ -75,6 +78,7 @@ const TokenSetNode: React.FC<TokenSetNodeProps> = ({
               <DisplayGroupNode
                 key={group.name}
                 group={group}
+                system={system}
                 allDisplayGroups={allDisplayGroups}
                 allTokens={allTokens}
                 allValues={allValues}

@@ -234,8 +234,7 @@ export const resolveTokenAndChain = (
 
   const buildChain = (node: ReferenceNode) => {
     if (node && node.value && node.value.name) {
-      const displayPart = node.value.name.split("/").pop() || node.value.name;
-      resolutionChain.push(displayPart);
+      resolutionChain.push(node.value.name);
       if (node.childNodes) {
         node.childNodes.forEach(buildChain);
       }
