@@ -1,5 +1,3 @@
-// dsdb-data-tools/app/app/utils/dsdb.ts
-
 // --- Type Definitions based on dsdb_format.md ---
 
 export interface Color {
@@ -17,26 +15,9 @@ export interface Type {
   lineHeightTokenName: string;
 }
 
-export type ResolvedValue =
-  | { color: Color }
-  | { opacity: number }
-  | { length: Length }
-  | { shape: Shape }
-  | { type: Type }
-  | { numeric: number }
-  | { fontWeight: number }
-  | { fontNames: { values: string[] } }
-  | { fontSize: Length }
-  | { fontTracking: Length }
-  | { lineHeight: Length }
-  | { elevation: Length }
-  | { axisValue: { tag: string; value?: string } }
-  | { undefined: true };
-
 export interface Length {
   value: number;
-  unit: "DIPS" | "PERCENT" | "POINTS";
-  // points only used in font specifiers
+  unit: "DIPS" | "PERCENT" | "POINTS"; // points only used in font specifiers
 }
 
 export interface ShapeDimension {
@@ -58,6 +39,22 @@ export interface ShapeRoundedCorners {
 }
 
 export type Shape = ShapeCircular | ShapeRoundedCorners;
+
+export type ResolvedValue =
+  | { color: Color }
+  | { opacity: number }
+  | { length: Length }
+  | { shape: Shape }
+  | { type: Type }
+  | { numeric: number }
+  | { fontWeight: number }
+  | { fontNames: { values: string[] } }
+  | { fontSize: Length }
+  | { fontTracking: Length }
+  | { lineHeight: Length }
+  | { elevation: Length }
+  | { axisValue: { tag: string; value?: string } }
+  | { undefined: true };
 
 export type Value = {
   name: string;

@@ -3,7 +3,7 @@ import App from "../app/App";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "New React Router App" },
+    { title: "DSDB Data tools" },
     { name: "description", content: "Welcome to React Router!" },
   ];
 }

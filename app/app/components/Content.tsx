@@ -1,26 +1,44 @@
-// dsdb-data-tools/app/app/components/Content.tsx
-
 import React from "react";
 import type {
   Component,
+  ContextTagGroup,
+  ContextualReferenceTree,
   DisplayGroup,
   DSDBSystem,
+  Tag,
   Token,
   TokenSet,
   Value,
-  ContextualReferenceTree,
 } from "../utils/dsdb";
 import DisplayGroupNode from "./DisplayGroupNode";
+import TokenSetNode from "./TokenSetNode";
 import ValueContent from "./ValueContent";
 
 // --- Type Definitions for Props ---
 
+// The `contextualReferenceTrees` data is transformed before being passed to this component.
+// This type represents the transformed item shape.
+interface ContextualReferenceTreeItem extends ContextualReferenceTree {
+  name: string;
+  displayName: string;
+}
+
+// A union of all possible item types that the generic `ItemList` can display.
+type DisplayableItem =
+  | Component
+  | TokenSet
+  | Value
+  | DisplayGroup
+  | ContextualReferenceTreeItem
+  | ContextTagGroup
+  | Tag;
+
 interface ContentProps {
   activeTab: string;
   system: DSDBSystem | null;
-  displayData: any[];
-  onItemSelect: (item: any, tab: string) => void;
-  selectedItem: any | null;
+  displayData: DisplayableItem[];
+  onItemSelect: (item: DisplayableItem, tab: string) => void;
+  selectedItem: DisplayableItem | null;
   selectedComponent: Component | null;
   searchTerm: string;
   onSearchChange: (term: string) => void;
@@ -33,6 +51,12 @@ interface ContentProps {
     string,
     ContextualReferenceTree
   >;
+}
+
+interface ItemListProps {
+  items: DisplayableItem[];
+  activeTab: string;
+  onItemSelect: (item: DisplayableItem, tab: string) => void;
 }
 
 // --- Helper Components ---
@@ -54,7 +78,13 @@ const SystemInfo: React.FC<{ system: DSDBSystem }> = ({ system }) => (
     <p>
       <strong>Token Name Prefix:</strong> {system.tokenNamePrefix}
     </p>
-    {system.thumbnailUrl && <img alt="" src={system.thumbnailUrl.imageUrl} />}
+    {system.thumbnailUrl?.imageUrl && (
+      <img
+        alt="System thumbnail"
+        src={system.thumbnailUrl.imageUrl}
+        className="max-w-xs rounded border border-gray-300"
+      />
+    )}
   </div>
 );
 
@@ -92,95 +122,58 @@ const TokenHierarchyView: React.FC<{
 
   return (
     <>
-      {filteredTokenSets.map((tokenSet) => {
-        // Find top-level display groups for this specific token set
-        const topLevelDisplayGroupsForTokenSet = allDisplayGroups
-          .filter(
-            (dg) =>
-              dg.name.startsWith(`${tokenSet.name}/displayGroups/`) &&
-              (!dg.parentGroup ||
-                !allDisplayGroups.some(
-                  (parentDg) => parentDg.name === dg.parentGroup
-                ))
-          )
-          .sort(
-            (a, b) =>
-              (a.orderInParentDisplayGroup || 0) -
-              (b.orderInParentDisplayGroup || 0)
-          );
-
-        return (
-          <div
-            key={tokenSet.name}
-            className="mb-6 border border-blue-200 rounded-lg bg-white"
-          >
-            <div className="bg-blue-50 p-4 border-b border-blue-200">
-              <h3 className="text-xl font-bold text-blue-800">
-                {tokenSet.displayName}
-              </h3>
-            </div>
-            <div className="p-4">
-              {topLevelDisplayGroupsForTokenSet.length > 0 ? (
-                topLevelDisplayGroupsForTokenSet.map((group) => (
-                  <DisplayGroupNode
-                    key={group.name}
-                    group={group}
-                    allDisplayGroups={allDisplayGroups}
-                    allTokens={allTokens}
-                    allValues={allValues}
-                    allContextualReferenceTrees={allContextualReferenceTrees}
-                    renderValueContent={(value) => (
-                      <ValueContent value={value} />
-                    )}
-                  />
-                ))
-              ) : (
-                <p className="text-center text-gray-500 py-4">
-                  No display groups found for this token set.
-                </p>
-              )}
-            </div>
-          </div>
-        );
-      })}
+      {filteredTokenSets.map((tokenSet) => (
+        <TokenSetNode
+          key={tokenSet.name}
+          tokenSet={tokenSet}
+          allDisplayGroups={allDisplayGroups}
+          allTokens={allTokens}
+          allValues={allValues}
+          allContextualReferenceTrees={allContextualReferenceTrees}
+        />
+      ))}
     </>
   );
 };
 
-const ItemList: React.FC<{
-  items: any[];
-  activeTab: string;
-  onItemSelect: (item: any, tab: string) => void;
-}> = ({ items, activeTab, onItemSelect }) => (
+const ItemList: React.FC<ItemListProps> = ({
+  items,
+  activeTab,
+  onItemSelect,
+}) => (
   <ul className="space-y-3">
-    {items.map((item, index) => (
-      <li
-        key={item.name || index}
-        className="p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all duration-150"
-        onClick={() => onItemSelect(item, activeTab)}
-      >
-        <h3 className="text-lg font-semibold text-blue-800 truncate">
-          {item.displayName || item.name || "Untitled"}
-        </h3>
-        {item.tokenName && (
-          <p className="text-sm text-gray-600 break-words mt-1">
-            <span className="font-mono text-xs bg-gray-200 px-1 py-0.5 rounded mr-2">
-              {item.tokenName}
-            </span>
-            {item.tokenValueType && (
-              <span className="font-medium text-purple-600">
-                {item.tokenValueType}
+    {items.map((item, index) => {
+      // Safely access properties that may not exist on all item types
+      const title =
+        "displayName" in item && item.displayName
+          ? item.displayName
+          : item.name;
+      const tokenName = "tokenName" in item ? item.tokenName : undefined;
+
+      return (
+        <li
+          key={item.name || index}
+          className="p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-200 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all duration-150"
+          onClick={() => onItemSelect(item, activeTab)}
+        >
+          <h3 className="text-lg font-semibold text-blue-800 truncate">
+            {title || "Untitled"}
+          </h3>
+          {tokenName && (
+            <p className="text-sm text-gray-600 break-words mt-1">
+              <span className="font-mono text-xs bg-gray-200 px-1 py-0.5 rounded mr-2">
+                {tokenName}
               </span>
-            )}
-          </p>
-        )}
-        {activeTab === "values" && (
-          <div className="mt-2 text-sm">
-            <ValueContent value={item} />
-          </div>
-        )}
-      </li>
-    ))}
+            </p>
+          )}
+          {activeTab === "values" && (
+            <div className="mt-2 text-sm">
+              <ValueContent value={item as Value} />
+            </div>
+          )}
+        </li>
+      );
+    })}
   </ul>
 );
 
@@ -191,7 +184,6 @@ const Content: React.FC<ContentProps> = ({
   system,
   displayData,
   onItemSelect,
-  selectedItem,
   selectedComponent,
   searchTerm,
   onSearchChange,

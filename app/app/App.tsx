@@ -2,7 +2,34 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useDsdb } from "./hooks/useDsdb";
 import Sidebar from "./components/Sidebar";
 import Content from "./components/Content";
-import type { Component } from "./utils/dsdb";
+import type {
+  Component,
+  ContextTagGroup,
+  ContextualReferenceTree,
+  DisplayGroup,
+  DSDBSystem,
+  Tag,
+  Token,
+  TokenSet,
+  Value,
+} from "./utils/dsdb";
+
+// This is a transformed type, so we define it here.
+interface ContextualReferenceTreeItem extends ContextualReferenceTree {
+  name: string;
+  displayName: string;
+}
+
+// A union of all possible item types that can be selected or displayed.
+type DisplayableItem =
+  | Component
+  | TokenSet
+  | Value
+  | DisplayGroup
+  | ContextualReferenceTreeItem
+  | ContextTagGroup
+  | Tag
+  | Token;
 
 const App: React.FC = () => {
   const { system, isLoading, error, loadFile, fileName } = useDsdb();
@@ -11,7 +38,9 @@ const App: React.FC = () => {
   const [selectedComponent, setSelectedComponent] = useState<Component | null>(
     null
   );
-  const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [selectedItem, setSelectedItem] = useState<DisplayableItem | null>(
+    null
+  );
 
   const handleFileChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,7 +63,7 @@ const App: React.FC = () => {
     setSelectedItem(null);
   }, []);
 
-  const handleItemSelect = useCallback((item: any, tab: string) => {
+  const handleItemSelect = useCallback((item: DisplayableItem, tab: string) => {
     setSelectedItem(item);
     // If the user clicks a component in the 'components' tab, set it as the filter.
     if (tab === "components") {
@@ -71,18 +100,20 @@ const App: React.FC = () => {
     if (!selectedComponent) return system.displayGroups;
 
     const relevantTokenDisplayGroupNames = new Set(
-      filteredTokensByComponent.map((t) => t.displayGroup)
+      filteredTokensByComponent
+        .map((t) => t.displayGroup)
+        .filter(Boolean) as string[]
     );
     const allRelevantGroupNames = new Set<string>();
 
     system.displayGroups.forEach((dg) => {
       if (relevantTokenDisplayGroupNames.has(dg.name)) {
-        let current = dg;
+        let current: DisplayGroup | undefined = dg;
         while (current && !allRelevantGroupNames.has(current.name)) {
           allRelevantGroupNames.add(current.name);
           current = system.displayGroups.find(
-            (parent) => parent.name === current.parentGroup
-          )!;
+            (parent) => parent.name === current!.parentGroup
+          );
         }
       }
     });
@@ -99,7 +130,7 @@ const App: React.FC = () => {
       filteredTokensByComponent.map((token) => token.tokenName)
     );
     return system.values.filter((value) =>
-      relevantTokenNames.has(value.tokenName)
+      value.tokenName ? relevantTokenNames.has(value.tokenName) : false
     );
   }, [system, selectedComponent, filteredTokensByComponent]);
 
@@ -118,9 +149,9 @@ const App: React.FC = () => {
 
   // --- SEARCH AND DISPLAY LOGIC ---
 
-  const displayDataForCurrentTab = useMemo(() => {
+  const displayDataForCurrentTab = useMemo((): DisplayableItem[] => {
     if (!system) return [];
-    let data: any[] = [];
+    let data: DisplayableItem[] = [];
 
     switch (activeTab) {
       case "components":
@@ -139,7 +170,7 @@ const App: React.FC = () => {
         return Object.entries(filteredContextualReferenceTreesByComponent).map(
           ([key, value]) => ({
             name: key,
-            displayName: key.split("/").pop(),
+            displayName: key.split("/").pop()!,
             ...value,
           })
         );
@@ -159,14 +190,23 @@ const App: React.FC = () => {
     if (!searchTerm) return data;
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
 
-    return data.filter(
-      (item) =>
-        (item.displayName &&
-          item.displayName.toLowerCase().includes(lowerCaseSearchTerm)) ||
-        (item.name && item.name.toLowerCase().includes(lowerCaseSearchTerm)) ||
-        (item.tokenName &&
-          item.tokenName.toLowerCase().includes(lowerCaseSearchTerm))
-    );
+    return data.filter((item) => {
+      // Generic search against displayName, name, or tokenName
+      const name =
+        "displayName" in item && item.displayName
+          ? item.displayName
+          : item.name;
+      if (name?.toLowerCase().includes(lowerCaseSearchTerm)) {
+        return true;
+      }
+      if (
+        "tokenName" in item &&
+        item.tokenName?.toLowerCase().includes(lowerCaseSearchTerm)
+      ) {
+        return true;
+      }
+      return false;
+    });
   }, [
     activeTab,
     system,

@@ -1,5 +1,32 @@
 import React from "react";
-import type { Component, DSDBSystem } from "../utils/dsdb";
+import type {
+  Component,
+  ContextTagGroup,
+  ContextualReferenceTree,
+  DisplayGroup,
+  DSDBSystem,
+  Tag,
+  Token,
+  TokenSet,
+  Value,
+} from "../utils/dsdb";
+
+// This is a transformed type, so we define it here.
+interface ContextualReferenceTreeItem extends ContextualReferenceTree {
+  name: string;
+  displayName: string;
+}
+
+// A union of all possible item types that can be selected and displayed.
+type DisplayableItem =
+  | Component
+  | TokenSet
+  | Value
+  | DisplayGroup
+  | ContextualReferenceTreeItem
+  | ContextTagGroup
+  | Tag
+  | Token;
 
 interface SidebarProps {
   fileName: string | null;
@@ -21,7 +48,7 @@ interface SidebarProps {
   };
   selectedComponent: Component | null;
   onClearComponentFilter: () => void;
-  selectedItem: any | null; // The currently selected item to display details for
+  selectedItem: DisplayableItem | null; // The currently selected item to display details for
   onClearSelection: () => void; // Function to clear the selected item
 }
 
@@ -136,17 +163,21 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <div className="flex-1 overflow-y-auto min-h-0 pr-2 -mr-2">
                 <p className="text-sm text-gray-700 font-medium truncate mb-2">
-                  {selectedItem.displayName || selectedItem.name}
+                  {"displayName" in selectedItem && selectedItem.displayName
+                    ? selectedItem.displayName
+                    : selectedItem.name}
                 </p>
-                {selectedItem.componentImage.imageUrl && (
-                  <div className="my-2 flex justify-center p-2 bg-gray-100 rounded">
-                    <img
-                      src={selectedItem.componentImage.imageUrl}
-                      alt="Component Thumbnail"
-                      className="max-w-full h-auto rounded border border-gray-300"
-                    />
-                  </div>
-                )}
+                {/* Type guard to check if the selected item is a Component and has an image */}
+                {"componentImage" in selectedItem &&
+                  selectedItem.componentImage && (
+                    <div className="my-2 flex justify-center p-2 bg-gray-100 rounded">
+                      <img
+                        src={selectedItem.componentImage.imageUrl}
+                        alt="Component Thumbnail"
+                        className="max-w-full h-auto rounded border border-gray-300"
+                      />
+                    </div>
+                  )}
                 <pre className="text-xs bg-white p-2 rounded border border-gray-200 whitespace-pre-wrap break-all">
                   {JSON.stringify(selectedItem, null, 2)}
                 </pre>

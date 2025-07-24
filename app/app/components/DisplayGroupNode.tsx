@@ -1,12 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 import type {
   DisplayGroup,
   Token,
   Value,
   ContextualReferenceTree,
   ResolvedValue,
-} from '../utils/dsdb';
-import { resolveTokenAndChain } from '../utils/dsdb';
+} from "../utils/dsdb";
+import { resolveTokenAndChain } from "../utils/dsdb";
 
 interface DisplayGroupNodeProps {
   group: DisplayGroup;
@@ -53,7 +53,7 @@ const DisplayGroupNode: React.FC<DisplayGroupNodeProps> = ({
         <h4 className="font-semibold text-gray-800 flex items-center">
           <svg
             className={`w-4 h-4 mr-2 transform transition-transform ${
-              isExpanded ? 'rotate-90' : ''
+              isExpanded ? "rotate-90" : ""
             }`}
             fill="none"
             stroke="currentColor"
@@ -95,7 +95,7 @@ const DisplayGroupNode: React.FC<DisplayGroupNodeProps> = ({
                     <div className="mt-2">
                       <p className="text-xs text-gray-500">Resolution Chain:</p>
                       <div className="text-xs font-mono text-gray-700 bg-gray-100 p-1 rounded overflow-x-auto">
-                        {resolutionChain.join(' → ')}
+                        {resolutionChain.join(" → ")}
                       </div>
                     </div>
                   )}
