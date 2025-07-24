@@ -16,7 +16,7 @@ export interface Type {
 }
 
 export interface Length {
-  value: number;
+  value?: number;
   unit: "DIPS" | "PERCENT" | "POINTS"; // points only used in font specifiers
 }
 

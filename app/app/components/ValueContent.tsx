@@ -16,16 +16,19 @@ const ValueContent: React.FC<ValueContentProps> = ({ value }) => {
   }
 
   // Helper to render Length-based values
-  const renderLength = (val: Length, label?: string) => (
-    <span className="text-sm">
-      {label && (
-        <strong className="font-medium text-gray-700">{label}: </strong>
-      )}
-      <span className="font-mono text-blue-600">
-        {val.value.toFixed(2)} {val.unit}
+  const renderLength = (val: Length, label?: string) => {
+    const value = val.value ?? 0;
+    return (
+      <span className="text-sm">
+        {label && (
+          <strong className="font-medium text-gray-700">{label}: </strong>
+        )}
+        <span className="font-mono text-blue-600">
+          {value.toFixed(2)} {val.unit}
+        </span>
       </span>
-    </span>
-  );
+    );
+  };
 
   // Type guard for Color
   if ("color" in value && value.color) {
