@@ -4,53 +4,6 @@ import Sidebar from "./components/Sidebar";
 import Content from "./components/Content";
 import type { Component } from "./utils/dsdb";
 
-// A simple modal to display raw JSON data of a selected item.
-const ItemDetailModal: React.FC<{
-  item: any;
-  onClose: () => void;
-}> = ({ item, onClose }) => {
-  if (!item) return null;
-
-  return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50"
-      onClick={onClose} // Close modal on overlay click
-    >
-      <div
-        className="bg-white p-6 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the modal
-      >
-        <div className="flex justify-between items-center mb-4 pb-4 border-b">
-          <h3 className="text-xl font-semibold text-gray-800">
-            Details: {item.displayName || item.name}
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 transition-colors"
-            aria-label="Close details"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
-        </div>
-        <pre className="flex-1 overflow-y-auto text-sm bg-gray-100 p-4 rounded border border-gray-200">
-          {JSON.stringify(item, null, 2)}
-        </pre>
-      </div>
-    </div>
-  );
-};
-
 const App: React.FC = () => {
   const { system, isLoading, error, loadFile, fileName } = useDsdb();
   const [activeTab, setActiveTab] = useState<string>("components");
@@ -261,12 +214,15 @@ const App: React.FC = () => {
         dataCounts={dataCounts}
         selectedComponent={selectedComponent}
         onClearComponentFilter={() => setSelectedComponent(null)}
+        selectedItem={selectedItem}
+        onClearSelection={() => setSelectedItem(null)}
       />
       <Content
         activeTab={activeTab}
         system={system}
         displayData={displayDataForCurrentTab}
         onItemSelect={handleItemSelect}
+        selectedItem={selectedItem}
         selectedComponent={selectedComponent}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
@@ -278,10 +234,6 @@ const App: React.FC = () => {
         filteredContextualReferenceTreesByComponent={
           filteredContextualReferenceTreesByComponent
         }
-      />
-      <ItemDetailModal
-        item={selectedItem}
-        onClose={() => setSelectedItem(null)}
       />
     </div>
   );

@@ -53,25 +53,25 @@ export interface TokenSet {
 }
 
 interface ReferenceNode {
-    value: {
-        name: string;
-    };
-    childNodes?: ReferenceNode[];
+  value: {
+    name: string;
+  };
+  childNodes?: ReferenceNode[];
 }
 
 export interface ResolvedValue {
-    color?: Color;
-    length?: Length;
-    opacity?: number;
+  color?: Color;
+  length?: Length;
+  opacity?: number;
 }
 
 interface ContextualReference {
-    referenceTree: ReferenceNode;
-    resolvedValue: ResolvedValue;
+  referenceTree: ReferenceNode;
+  resolvedValue: ResolvedValue;
 }
 
 export interface ContextualReferenceTree {
-    contextualReferenceTree: ContextualReference[];
+  contextualReferenceTree: ContextualReference[];
 }
 
 export interface DSDBSystem {
@@ -79,6 +79,10 @@ export interface DSDBSystem {
   displayName: string;
   dsdbVersion: string;
   description: string;
+  thumbnailUrl: {
+    thumbnailUrl: string;
+    imageUrl: string;
+  };
   tokenNamePrefix: string;
   components: Component[];
   tokenSets: TokenSet[];
@@ -94,9 +98,8 @@ export interface DSDBSystem {
 }
 
 export interface DSDB {
-    system: DSDBSystem;
+  system: DSDBSystem;
 }
-
 
 // --- Utility Functions ---
 
@@ -116,10 +119,9 @@ export const rgbToHex = (r?: number, g?: number, b?: number): string => {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 };
 
-
 export interface ResolvedTokenInfo {
-    resolvedValue: ResolvedValue | null;
-    resolutionChain: string[];
+  resolvedValue: ResolvedValue | null;
+  resolutionChain: string[];
 }
 
 /**
@@ -129,8 +131,8 @@ export interface ResolvedTokenInfo {
  * @returns An object containing the resolved value and the resolution chain.
  */
 export const resolveTokenAndChain = (
-    token: Token,
-    allContextualReferenceTrees: Record<string, ContextualReferenceTree>
+  token: Token,
+  allContextualReferenceTrees: Record<string, ContextualReferenceTree>
 ): ResolvedTokenInfo => {
   const crtEntry = allContextualReferenceTrees[token.name];
   if (
@@ -156,7 +158,7 @@ export const resolveTokenAndChain = (
   };
 
   if (primaryRefTree.referenceTree) {
-      buildChain(primaryRefTree.referenceTree);
+    buildChain(primaryRefTree.referenceTree);
   }
 
   return { resolvedValue, resolutionChain };

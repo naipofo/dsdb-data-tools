@@ -20,6 +20,7 @@ interface ContentProps {
   system: DSDBSystem | null;
   displayData: any[];
   onItemSelect: (item: any, tab: string) => void;
+  selectedItem: any | null;
   selectedComponent: Component | null;
   searchTerm: string;
   onSearchChange: (term: string) => void;
@@ -53,6 +54,7 @@ const SystemInfo: React.FC<{ system: DSDBSystem }> = ({ system }) => (
     <p>
       <strong>Token Name Prefix:</strong> {system.tokenNamePrefix}
     </p>
+    {system.thumbnailUrl && <img alt="" src={system.thumbnailUrl.imageUrl} />}
   </div>
 );
 
@@ -189,6 +191,7 @@ const Content: React.FC<ContentProps> = ({
   system,
   displayData,
   onItemSelect,
+  selectedItem,
   selectedComponent,
   searchTerm,
   onSearchChange,
