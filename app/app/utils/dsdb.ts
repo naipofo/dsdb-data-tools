@@ -151,7 +151,7 @@ interface ReferenceNode {
 }
 
 interface ContextualReference {
-  contextTags: string[];
+  contextTags?: string[];
   referenceTree: ReferenceNode;
   resolvedValue: ResolvedValue;
 }
@@ -248,7 +248,7 @@ export const resolveTokenAndChain = (
     }
 
     return {
-      contextTags: contextualReference.contextTags,
+      contextTags: contextualReference.contextTags ?? [],
       resolvedValue,
       resolutionChain,
     };
