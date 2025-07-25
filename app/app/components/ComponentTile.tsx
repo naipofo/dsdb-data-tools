@@ -1,12 +1,15 @@
-import React from 'react';
-import type { Component } from '../utils/dsdb';
+import React from "react";
+import type { Component } from "../DsdbManager";
 
 interface ComponentTileProps {
   component: Component;
   onSelect: (component: Component) => void;
 }
 
-const ComponentTile: React.FC<ComponentTileProps> = ({ component, onSelect }) => {
+const ComponentTile: React.FC<ComponentTileProps> = ({
+  component,
+  onSelect,
+}) => {
   const { displayName, name, componentImage } = component;
   const imageUrl = componentImage?.imageUrl;
 

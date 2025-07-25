@@ -200,7 +200,7 @@ export class DsdbManager {
     private displayGroups: DisplayGroup[],
     private contextualReferenceTrees: Map<string, ContextualReferenceTree>,
     public contextTagGroups: ContextTagGroup[],
-    private tags: Map<string, Tag>
+    public tags: Map<string, Tag>
   ) {}
 
   static fromJson(json: string) {
