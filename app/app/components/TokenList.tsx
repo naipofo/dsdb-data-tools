@@ -3,9 +3,9 @@ import type {
   DisplayGroupChildItem,
   DisplayGroupTokenItem,
   DsdbManager,
-  ResolvedValue,
   Tag,
-  TokenResolutionLink,
+  Token,
+  TokenSet,
   Value,
 } from "../DsdbManager";
 import { rgbToHex } from "../utils/colors";
@@ -57,65 +57,6 @@ function ResolutionChainView({ chain }: { chain: Value[] }) {
   );
 }
 
-function ValueContentView({ value }: { value: ResolvedValue }) {
-  if ("color" in value && value.color) {
-    const hex = rgbToHex(value.color.red, value.color.green, value.color.blue);
-    return (
-      <div className="flex items-center gap-2">
-        <div
-          className="w-4 h-4 rounded-full border"
-          style={{ backgroundColor: hex, opacity: value.color.alpha }}
-        ></div>
-        <span>{hex.toUpperCase()}</span>
-      </div>
-    );
-  }
-  if ("length" in value && value.length) {
-    return (
-      <div className="flex items-center gap-2">
-        <svg
-          className="w-4 h-4 text-gray-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-          ></path>
-        </svg>
-        <span>{`${value.length.value}dp`}</span>
-      </div>
-    );
-  }
-  if ("shape" in value) {
-    return (
-      <div className="flex items-center gap-2">
-        <svg
-          className="w-4 h-4 text-gray-500"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M20 7L9.46 17.54a2 2 0 01-2.83 0L4 15"
-          ></path>
-        </svg>
-        <span>Shape</span>
-      </div>
-    );
-  }
-
-  // Fallback for other types
-  const key = Object.keys(value)[0];
-  return <span>{key}</span>;
-}
-
 function TokenView({
   token,
   selectedContextTags,
@@ -127,7 +68,7 @@ function TokenView({
 
   if (!resolution) {
     return (
-      <div className="p-4 border-b">
+      <div className="p-4 border-b last:border-b-0">
         <div className="flex justify-between items-center">
           <div>
             <p className="font-semibold text-gray-900">{token.displayName}</p>
@@ -201,7 +142,7 @@ function DisplayGroupView({
         </svg>
       </div>
       {isExpanded && (
-        <div>
+        <div className="border-l border-gray-200">
           {group.tokens.map((token) => (
             <TokenView
               key={token.name}
@@ -223,13 +164,95 @@ function DisplayGroupView({
   );
 }
 
+function TokenSetView({
+  set,
+  tokens,
+  displayGroups,
+  selectedContextTags,
+  onDownloadShallowCopy,
+}: {
+  set: TokenSet;
+  tokens: DisplayGroupTokenItem[];
+  displayGroups: DisplayGroupChildItem[];
+  selectedContextTags: Set<string>;
+  onDownloadShallowCopy: () => void;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  return (
+    <div className="border-b last:border-b-0">
+      <div
+        className="flex justify-between items-center p-3 cursor-pointer bg-gray-200 hover:bg-gray-300"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-3">
+          <svg
+            className="w-6 h-6 text-gray-700"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M2 6a2 2 0 012-2h5l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path>
+          </svg>
+          <span className="font-semibold text-lg">{set.displayName}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDownloadShallowCopy();
+            }}
+            className="text-xs px-2 py-1 bg-blue-200 text-blue-800 rounded hover:bg-blue-300 transition-colors"
+          >
+            Download Shallow Copy
+          </button>
+          <svg
+            className={`w-6 h-6 text-gray-600 transition-transform ${
+              isExpanded ? "transform rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 9l-7 7-7-7"
+            ></path>
+          </svg>
+        </div>
+      </div>
+      {isExpanded && (
+        <div>
+          {tokens.map((token) => (
+            <TokenView
+              key={token.name}
+              token={token}
+              selectedContextTags={selectedContextTags}
+            />
+          ))}
+          {displayGroups.map((group) => (
+            <DisplayGroupView
+              key={group.name}
+              group={group}
+              selectedContextTags={selectedContextTags}
+              level={0}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface TokenListProps {
+  dsdbManager: DsdbManager;
   tokenSets: ReturnType<DsdbManager["tokensForComponent"]>;
-  selectedContext: Record<string, string>; // group.name -> tag.name
+  selectedContext: Record<string, string>;
   allTags: Map<string, Tag>;
 }
 
 export default function TokenList({
+  dsdbManager,
   tokenSets,
   selectedContext,
   allTags,
@@ -240,18 +263,42 @@ export default function TokenList({
       .filter((t): t is string => !!t)
   );
 
+  const handleDownload = (
+    set: TokenSet,
+    displayGroups: DisplayGroupChildItem[],
+    tokens: DisplayGroupTokenItem[]
+  ) => {
+    const data = dsdbManager.shallowCopyForTokenSet(
+      set,
+      displayGroups,
+      tokens,
+      selectedContext
+    );
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${data.tokenSetName || "tokens"}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="border rounded-lg overflow-hidden shadow">
-      {tokenSets.map(({ set, displayGroups }) => (
-        <div key={set.name}>
-          {displayGroups.map((group) => (
-            <DisplayGroupView
-              key={group.name}
-              group={group}
-              selectedContextTags={selectedContextTags}
-            />
-          ))}
-        </div>
+    <div className="border rounded-lg overflow-hidden shadow-sm">
+      {tokenSets.map(({ set, displayGroups, tokens }) => (
+        <TokenSetView
+          key={set.name}
+          set={set}
+          tokens={tokens}
+          displayGroups={displayGroups}
+          selectedContextTags={selectedContextTags}
+          onDownloadShallowCopy={() =>
+            handleDownload(set, displayGroups, tokens)
+          }
+        />
       ))}
     </div>
   );

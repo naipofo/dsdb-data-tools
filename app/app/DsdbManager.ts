@@ -1,3 +1,4 @@
+import { findBestResolution } from "./utils/findBestResolution";
 export interface Color {
   red: number;
   green: number;
@@ -259,6 +260,7 @@ export class DsdbManager {
     return this.getTokenSetsForComponent(tokenSetNames).map((set) => ({
       set,
       displayGroups: this.getRootDisplayGroupsForSet(set.name),
+      tokens: this.getTokensByNamePrefixWithoutDisplayGroup(set.name),
     }));
   }
 
@@ -305,9 +307,8 @@ export class DsdbManager {
       }));
   }
 
-  private getDisplayGroupTokens(groupName: string): DisplayGroupTokenItem[] {
-    return this.tokens
-      .filter(({ displayGroup }) => displayGroup === groupName)
+  private mapTokensToDisplayItems(tokens: Token[]): DisplayGroupTokenItem[] {
+    return tokens
       .sort(
         (
           { orderInDisplayGroup },
@@ -322,6 +323,22 @@ export class DsdbManager {
         description,
         chain: this.resolveTokenChain(name),
       }));
+  }
+
+  private getDisplayGroupTokens(groupName: string): DisplayGroupTokenItem[] {
+    const groupTokens = this.tokens.filter(
+      ({ displayGroup }) => displayGroup === groupName
+    );
+    return this.mapTokensToDisplayItems(groupTokens);
+  }
+
+  private getTokensByNamePrefixWithoutDisplayGroup(
+    namePrefix: string
+  ): DisplayGroupTokenItem[] {
+    const prefixTokens = this.tokens.filter(
+      ({ name, displayGroup }) => name.startsWith(namePrefix) && !displayGroup
+    );
+    return this.mapTokensToDisplayItems(prefixTokens);
   }
 
   private resolveTokenChain(tokenName: string) {
@@ -355,5 +372,70 @@ export class DsdbManager {
         };
       }
     );
+  }
+
+  private shallowCopyTokenMake(
+    token: DisplayGroupTokenItem,
+    selectedContext: Record<string, string>
+  ) {
+    const currentContextTags = new Set(
+      Object.values(selectedContext)
+        .map((name) => this.tags.get(name)?.tagName)
+        .filter((t): t is string => !!t)
+    );
+
+    const bestResolution = findBestResolution(token.chain, currentContextTags);
+
+    if (!bestResolution) {
+      return {};
+    }
+
+    const { resolutionChain } = bestResolution;
+
+    const {
+      name,
+      specificityScore,
+      createTime,
+      revisionId,
+      revisionCreateTime,
+      ...restOfToken
+    } = resolutionChain[0] as Value & {
+      revisionId: unknown;
+      revisionCreateTime: unknown;
+      state: unknown;
+    };
+    return { token: restOfToken };
+  }
+
+  shallowCopyForTokenSet(
+    set: TokenSet,
+    displayGroups: DisplayGroupChildItem[],
+    tokens: DisplayGroupTokenItem[],
+    selectedContext: Record<string, string>
+  ): any {
+    const tokenList: DisplayGroupTokenItem[] = [...tokens];
+    const processDg = (dg: DisplayGroupChildItem[]) => {
+      for (const { tokens, child } of dg) {
+        tokenList.push(...tokens);
+        processDg(child);
+      }
+    };
+
+    processDg(displayGroups);
+
+    return {
+      displayName: set.displayName,
+      tokenSetName: set.tokenSetName,
+      tokens: tokenList.map((token) => {
+        const data = this.shallowCopyTokenMake(token, selectedContext);
+        const { tokenName, displayName, tokenValueType } = token;
+        return {
+          tokenName,
+          displayName,
+          tokenValueType,
+          data,
+        };
+      }),
+    };
   }
 }

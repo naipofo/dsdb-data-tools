@@ -11,6 +11,7 @@ import type {
 } from "../DsdbManager";
 import ComponentTile from "./ComponentTile";
 import { findBestResolution } from "../utils/findBestResolution";
+import { downloadText } from "../utils/downloadText";
 
 export function DsdbViewer() {
   const { error, loadJson } = useContext(LoadDsdbJsonContext)!;
@@ -184,6 +185,7 @@ export function DsdbViewer() {
                 onContextChange={handleContextChange}
               />
               <TokenList
+                dsdbManager={dsdb}
                 tokenSets={dsdb.tokensForComponent(selectedComponent)}
                 selectedContext={selectedContext}
                 allTags={dsdb.tags}
