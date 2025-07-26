@@ -9,6 +9,7 @@ import type {
   Value,
 } from "../DsdbManager";
 import { rgbToHex } from "../utils/colors";
+import { findBestResolution } from "../utils/findBestResolution";
 
 function ResolutionChainView({ chain }: { chain: Value[] }) {
   return (
@@ -16,8 +17,8 @@ function ResolutionChainView({ chain }: { chain: Value[] }) {
       {chain.map((link, index) => {
         const isLast = index === chain.length - 1;
         const hasColor = "color" in link && link.color;
-        const bgColor = isLast ? "bg-blue-50" : "bg-gray-100";
-        const textColor = isLast ? "text-blue-800" : "text-gray-800";
+        const bgColor = isLast ? "bg-gray-200" : "bg-gray-100";
+        const textColor = isLast ? "text-gray-900" : "text-gray-800";
 
         return (
           <Fragment key={link.name}>
@@ -115,34 +116,6 @@ function ValueContentView({ value }: { value: ResolvedValue }) {
   return <span>{key}</span>;
 }
 
-function findBestResolution(
-  chain: TokenResolutionLink[],
-  selectedContextTags: Set<string>
-): TokenResolutionLink | undefined {
-  let bestMatch: TokenResolutionLink | undefined = undefined;
-  let highestScore = -1;
-
-  for (const resolution of chain) {
-    const resolutionTagNames = resolution.contextTags.map((t) => t.tagName);
-    const isMatch = resolutionTagNames.every((tagName) =>
-      selectedContextTags.has(tagName)
-    );
-
-    if (isMatch) {
-      if (resolutionTagNames.length > highestScore) {
-        highestScore = resolutionTagNames.length;
-        bestMatch = resolution;
-      }
-    }
-  }
-
-  if (!bestMatch) {
-    bestMatch = chain.find((r) => r.contextTags.length === 0);
-  }
-
-  return bestMatch;
-}
-
 function TokenView({
   token,
   selectedContextTags,
@@ -157,7 +130,7 @@ function TokenView({
       <div className="p-4 border-b">
         <div className="flex justify-between items-center">
           <div>
-            <p className="font-semibold text-blue-600">{token.displayName}</p>
+            <p className="font-semibold text-gray-900">{token.displayName}</p>
             <p className="text-sm text-gray-500">{token.tokenName}</p>
           </div>
         </div>
@@ -170,10 +143,10 @@ function TokenView({
     <div className="p-4 border-b last:border-b-0">
       <div className="flex justify-between items-start">
         <div>
-          <h4 className="font-semibold text-blue-600">{token.displayName}</h4>
+          <h4 className="font-semibold text-gray-900">{token.displayName}</h4>
           <p className="text-sm text-gray-500 mt-0.5">{token.tokenName}</p>
         </div>
-        <span className="px-2 py-0.5 text-xs font-medium text-purple-700 bg-purple-100 rounded-full">
+        <span className="px-2 py-0.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
           {token.tokenValueType}
         </span>
       </div>
@@ -197,13 +170,13 @@ function DisplayGroupView({
     <div className={level > 0 ? "pl-4" : ""}>
       <div
         className={`flex justify-between items-center p-2 cursor-pointer border-b ${
-          level === 0 ? "bg-purple-100" : "bg-gray-50"
-        } hover:bg-purple-50`}
+          level === 0 ? "bg-gray-100" : "bg-gray-50"
+        } hover:bg-gray-200`}
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-2">
           <svg
-            className="w-5 h-5 text-purple-700"
+            className="w-5 h-5 text-gray-600"
             fill="currentColor"
             viewBox="0 0 20 20"
           >

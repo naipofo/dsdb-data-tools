@@ -21,33 +21,30 @@ export default function ContextSelector({
   });
 
   return (
-    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
-      <h2 className="text-lg font-semibold mb-2">See more values</h2>
-      <p className="text-sm text-gray-600 mb-4">
-        Compare token values by selecting another context
-      </p>
-      <div className="space-y-4">
+    <div className="bg-gray-50 p-2 rounded-lg border border-gray-200 mb-4">
+      <h2 className="text-base font-semibold mb-2">See more values</h2>
+      <div className="space-y-2">
         {tagsByGroup.map((group) => (
           <div key={group.name}>
             <h3 className="font-semibold text-gray-700 mb-2">
               {group.displayName}
             </h3>
-            <div className="inline-flex items-center p-1 bg-purple-100 rounded-full">
+            <div className="inline-flex items-center p-1 bg-gray-200 rounded-full">
               {group.tags.map((tag) => {
                 const isSelected = selectedContext[group.name] === tag.name;
                 return (
                   <button
                     key={tag.name}
                     onClick={() => onContextChange(group.name, tag.name)}
-                    className={`px-4 py-1.5 text-sm rounded-full font-medium transition-colors flex items-center focus:outline-none ${
+                    className={`px-2 py-1 text-xs rounded-full font-medium transition-colors flex items-center focus:outline-none ${
                       isSelected
-                        ? "bg-purple-600 text-white shadow"
-                        : "text-purple-700 hover:bg-purple-200"
+                        ? "bg-gray-800 text-white shadow"
+                        : "text-gray-700 hover:bg-gray-300"
                     }`}
                   >
                     {isSelected && (
                       <svg
-                        className="w-4 h-4 mr-1.5"
+                        className="w-3 h-3 mr-1.5"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"

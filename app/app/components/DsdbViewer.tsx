@@ -3,8 +3,14 @@ import { DsdbContext, LoadDsdbJsonContext } from "../contexts/DsdbContext";
 import Sidebar from "./Sidebar";
 import ContextSelector from "./ContextSelector";
 import TokenList from "./TokenList";
-import type { Component } from "../DsdbManager";
+import type {
+  Component,
+  ContextTagGroup,
+  DisplayGroupChildItem,
+  DisplayGroupTokenItem,
+} from "../DsdbManager";
 import ComponentTile from "./ComponentTile";
+import { findBestResolution } from "../utils/findBestResolution";
 
 export function DsdbViewer() {
   const { error, loadJson } = useContext(LoadDsdbJsonContext)!;
@@ -16,6 +22,9 @@ export function DsdbViewer() {
   const [selectedContext, setSelectedContext] = useState<
     Record<string, string>
   >({});
+  const [relevantContextTagGroups, setRelevantContextTagGroups] = useState<
+    ContextTagGroup[]
+  >([]);
 
   useEffect(() => {
     if (selectedComponent && dsdb) {
@@ -28,6 +37,88 @@ export function DsdbViewer() {
       setSelectedContext({});
     }
   }, [selectedComponent, dsdb]);
+
+  useEffect(() => {
+    if (
+      !selectedComponent ||
+      !dsdb ||
+      Object.keys(selectedContext).length === 0
+    ) {
+      setRelevantContextTagGroups([]);
+      return;
+    }
+
+    function getAllTokens(
+      displayGroups: DisplayGroupChildItem[]
+    ): DisplayGroupTokenItem[] {
+      const allTokens: DisplayGroupTokenItem[] = [];
+      function recurse(groups: DisplayGroupChildItem[]) {
+        for (const group of groups) {
+          allTokens.push(...group.tokens);
+          if (group.child) {
+            recurse(group.child);
+          }
+        }
+      }
+      recurse(displayGroups);
+      return allTokens;
+    }
+
+    const tokens = dsdb
+      .tokensForComponent(selectedComponent)
+      .flatMap((set) => getAllTokens(set.displayGroups));
+    const allTags = Array.from(dsdb.tags.values());
+
+    const relevantGroups = dsdb.contextTagGroups.filter((group) => {
+      const groupTags = allTags.filter((tag) =>
+        tag.name.startsWith(group.name + "/tags/")
+      );
+      if (groupTags.length <= 1) {
+        return false;
+      }
+
+      const currentTagForGroup = selectedContext[group.name];
+      const otherTags = groupTags.filter((t) => t.name !== currentTagForGroup);
+
+      return otherTags.some((otherTag) => {
+        const hypotheticalContext = {
+          ...selectedContext,
+          [group.name]: otherTag.name,
+        };
+
+        const currentContextTags = new Set(
+          Object.values(selectedContext)
+            .map((name) => dsdb.tags.get(name)?.tagName)
+            .filter((t): t is string => !!t)
+        );
+        const hypotheticalContextTags = new Set(
+          Object.values(hypotheticalContext)
+            .map((name) => dsdb.tags.get(name)?.tagName)
+            .filter((t): t is string => !!t)
+        );
+
+        return tokens.some((token) => {
+          const currentResolution = findBestResolution(
+            token.chain,
+            currentContextTags
+          );
+          const hypotheticalResolution = findBestResolution(
+            token.chain,
+            hypotheticalContextTags
+          );
+
+          const currentFinalValueName =
+            currentResolution?.resolutionChain.at(-1)?.name;
+          const hypotheticalFinalValueName =
+            hypotheticalResolution?.resolutionChain.at(-1)?.name;
+
+          return currentFinalValueName !== hypotheticalFinalValueName;
+        });
+      });
+    });
+
+    setRelevantContextTagGroups(relevantGroups);
+  }, [selectedComponent, selectedContext, dsdb]);
 
   const handleContextChange = (groupName: string, tagName: string) => {
     setSelectedContext((prev) => ({
@@ -87,7 +178,7 @@ export function DsdbViewer() {
           {selectedComponent && dsdb && (
             <>
               <ContextSelector
-                contextTagGroups={dsdb.contextTagGroups}
+                contextTagGroups={relevantContextTagGroups}
                 tags={Array.from(dsdb.tags.values())}
                 selectedContext={selectedContext}
                 onContextChange={handleContextChange}
