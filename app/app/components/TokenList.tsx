@@ -10,6 +10,7 @@ import type {
 } from "../DsdbManager";
 import { rgbToHex } from "../utils/colors";
 import { findBestResolution } from "../utils/findBestResolution";
+import { downloadText } from "../utils/downloadText";
 
 function ResolutionChainView({ chain }: { chain: Value[] }) {
   return (
@@ -275,15 +276,11 @@ export default function TokenList({
       selectedContext
     );
     const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${data.tokenSetName || "tokens"}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadText(
+      `${data.tokenSetName || "tokens"}.json`,
+      json,
+      "application/json"
+    );
   };
 
   return (

@@ -325,7 +325,7 @@ export class DsdbManager {
         tokenName,
         tokenValueType,
         description,
-        chain: this.resolveTokenChain(name),
+        chain: this.resolveTokenChain(name) ?? [],
       }));
   }
 
@@ -345,9 +345,14 @@ export class DsdbManager {
     return this.mapTokensToDisplayItems(prefixTokens);
   }
 
-  private resolveTokenChain(tokenName: string) {
-    const { contextualReferenceTree } =
-      this.contextualReferenceTrees.get(tokenName)!;
+  public resolveTokenChain(
+    tokenName: string
+  ): TokenResolutionLink[] | undefined {
+    const treeData = this.contextualReferenceTrees.get(tokenName);
+    if (!treeData) {
+      return undefined;
+    }
+    const { contextualReferenceTree } = treeData;
 
     return contextualReferenceTree.map(
       ({ referenceTree, resolvedValue, contextTags }) => {
@@ -441,5 +446,124 @@ export class DsdbManager {
         };
       }),
     };
+  }
+
+  getTokensExport(
+    tokens: Token[],
+    selectedContext: Record<string, string>
+  ): Record<string, object | string> {
+    const currentContextTags = new Set(
+      Object.values(selectedContext)
+        .map((name) => this.tags.get(name)?.tagName)
+        .filter((t): t is string => !!t)
+    );
+
+    const results: Record<string, object | string> = {};
+
+    for (const token of tokens) {
+      const chain = this.resolveTokenChain(token.name);
+      if (!chain) {
+        continue;
+      }
+
+      const bestResolution = findBestResolution(chain, currentContextTags);
+
+      if (bestResolution) {
+        const finalValue = bestResolution.resolutionChain.slice(-1)[0];
+        if (!finalValue) continue;
+        let styleValue: string | object = "";
+
+        if ("color" in finalValue && finalValue.color) {
+          const { red, green, blue, alpha } = finalValue.color;
+          if (alpha !== 1) {
+            console.warn("NON 1.0 ALPHA DETECTED - NO SUPPORT", finalValue);
+          }
+          styleValue = `${Math.round((red || 0) * 255)} ${Math.round(
+            (green || 0) * 255
+          )} ${Math.round((blue || 0) * 255)}`;
+        } else if (
+          "length" in finalValue &&
+          finalValue.length &&
+          finalValue.length.value !== undefined
+        ) {
+          const unit = finalValue.length.unit === "DIPS" ? "px" : "";
+          styleValue = `${finalValue.length.value}${unit}`;
+        } else if (
+          "fontWeight" in finalValue &&
+          finalValue.fontWeight !== undefined
+        ) {
+          styleValue = { value: finalValue.fontWeight, type: "weight" };
+        } else if (
+          "numeric" in finalValue &&
+          finalValue.numeric !== undefined
+        ) {
+          styleValue = `${finalValue.numeric}`;
+        } else if (
+          "elevation" in finalValue &&
+          finalValue.elevation &&
+          finalValue.elevation.value !== undefined
+        ) {
+          const unit = finalValue.elevation.unit === "DIPS" ? "px" : "";
+          styleValue = `${finalValue.elevation.value}${unit}`;
+        } else if ("type" in finalValue && finalValue.type) {
+          console.warn("type not implemented");
+          continue;
+        } else if ("fontSize" in finalValue && finalValue.fontSize?.value) {
+          styleValue = finalValue.fontSize.value.toString();
+        } else if ("lineHeight" in finalValue && finalValue.lineHeight?.value) {
+          styleValue = finalValue.lineHeight.value.toString();
+        } else if (
+          "fontTracking" in finalValue &&
+          finalValue.fontTracking?.value
+        ) {
+          styleValue = {
+            value: finalValue.fontTracking?.value,
+            type: "tracking",
+          };
+        } else if ("fontNames" in finalValue && finalValue.fontNames) {
+          const value = finalValue.fontNames.values
+            .map((v) => `"${v}"`)
+            .join(", ");
+          styleValue = { value, type: "font" };
+        } else if ("shape" in finalValue && finalValue.shape) {
+          const { shape } = finalValue;
+          if (shape.family === "SHAPE_FAMILY_CIRCULAR") {
+            styleValue = "50%";
+            // TODO: this will generate an eclipse instead of a pill, but might be OK
+            // pill-shapes will define corners anyways for animations
+          } else if (shape.family === "SHAPE_FAMILY_ROUNDED_CORNERS") {
+            const format = (dim?: ShapeDimension) => {
+              if (!dim || dim.value === undefined) return "0";
+              const unit = dim.unit === "DIPS" ? "px" : "%";
+              return `${dim.value}${unit}`;
+            };
+
+            if (shape.defaultSize && shape.defaultSize.value !== undefined) {
+              styleValue = format(shape.defaultSize);
+            } else {
+              const tl = format(shape.topLeft);
+              const tr = format(shape.topRight);
+              const br = format(shape.bottomRight);
+              const bl = format(shape.bottomLeft);
+              styleValue = `${tl} ${tr} ${br} ${bl}`;
+            }
+          }
+        }
+
+        if (styleValue) {
+          results[token.tokenName] = styleValue;
+        }
+      }
+    }
+    return results;
+  }
+
+  getSystemTokensExport(
+    selectedContext: Record<string, string>
+  ): Record<string, string | object> {
+    const systemTokens = this.getAllTokens().filter((token) =>
+      token.tokenName.startsWith("md.sys")
+    );
+    return this.getTokensExport(systemTokens, selectedContext);
   }
 }
