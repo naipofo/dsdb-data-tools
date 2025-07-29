@@ -10,6 +10,7 @@ import type {
   DisplayGroupTokenItem,
 } from "../DsdbManager";
 import ComponentTile from "./ComponentTile";
+import TokenMapView from "./TokenMapView";
 import { findBestResolution } from "../utils/findBestResolution";
 import { downloadText } from "../utils/downloadText";
 
@@ -20,6 +21,7 @@ export function DsdbViewer() {
   const [selectedComponent, setSelectedComponent] = useState<Component | null>(
     null
   );
+  const [showTokenMap, setShowTokenMap] = useState(false);
   const [selectedContext, setSelectedContext] = useState<
     Record<string, string>
   >({});
@@ -149,6 +151,7 @@ export function DsdbViewer() {
       reader.readAsText(file);
 
       setSelectedComponent(null);
+      setShowTokenMap(false);
     }
   };
 
@@ -165,31 +168,52 @@ export function DsdbViewer() {
           thumbnailUrl={dsdb?.thumbnailUrl}
         />
         <main className="bg-white flex-1 overflow-y-auto p-6 rounded-lg shadow-md">
-          {!selectedComponent && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {(dsdb?.components ?? []).map((component) => (
-                <ComponentTile
-                  key={component.name}
-                  component={component}
-                  onSelect={setSelectedComponent}
-                />
-              ))}
-            </div>
-          )}
-          {selectedComponent && dsdb && (
+          {dsdb && showTokenMap ? (
+            <TokenMapView
+              dsdbManager={dsdb}
+              onClose={() => setShowTokenMap(false)}
+            />
+          ) : (
             <>
-              <ContextSelector
-                contextTagGroups={relevantContextTagGroups}
-                tags={Array.from(dsdb.tags.values())}
-                selectedContext={selectedContext}
-                onContextChange={handleContextChange}
-              />
-              <TokenList
-                dsdbManager={dsdb}
-                tokenSets={dsdb.tokensForComponent(selectedComponent)}
-                selectedContext={selectedContext}
-                allTags={dsdb.tags}
-              />
+              {!selectedComponent && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {(dsdb?.components ?? []).map((component) => (
+                      <ComponentTile
+                        key={component.name}
+                        component={component}
+                        onSelect={setSelectedComponent}
+                      />
+                    ))}
+                  </div>
+                  {dsdb && (
+                    <div className="mt-8 text-center">
+                      <button
+                        onClick={() => setShowTokenMap(true)}
+                        className="px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors font-semibold shadow-md"
+                      >
+                        Show Token Map
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+              {selectedComponent && dsdb && (
+                <>
+                  <ContextSelector
+                    contextTagGroups={relevantContextTagGroups}
+                    tags={Array.from(dsdb.tags.values())}
+                    selectedContext={selectedContext}
+                    onContextChange={handleContextChange}
+                  />
+                  <TokenList
+                    dsdbManager={dsdb}
+                    tokenSets={dsdb.tokensForComponent(selectedComponent)}
+                    selectedContext={selectedContext}
+                    allTags={dsdb.tags}
+                  />
+                </>
+              )}
             </>
           )}
         </main>

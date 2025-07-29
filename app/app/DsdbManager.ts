@@ -256,6 +256,10 @@ export class DsdbManager {
     );
   }
 
+  getAllTokens(): Token[] {
+    return this.tokens;
+  }
+
   tokensForComponent({ tokenSets: tokenSetNames }: Component) {
     return this.getTokenSetsForComponent(tokenSetNames).map((set) => ({
       set,
