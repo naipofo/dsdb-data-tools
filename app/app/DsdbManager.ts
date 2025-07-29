@@ -473,7 +473,12 @@ export class DsdbManager {
         if (!finalValue) continue;
         let styleValue: string | object = "";
 
-        if ("color" in finalValue && finalValue.color) {
+        if (
+          token.tokenValueType === "TYPOGRAPHY" &&
+          "type" in bestResolution.resolutionChain[0]
+        ) {
+          styleValue = bestResolution.resolutionChain[0].type;
+        } else if ("color" in finalValue && finalValue.color) {
           const { red, green, blue, alpha } = finalValue.color;
           if (alpha !== 1) {
             console.warn("NON 1.0 ALPHA DETECTED - NO SUPPORT", finalValue);
@@ -505,9 +510,6 @@ export class DsdbManager {
         ) {
           const unit = finalValue.elevation.unit === "DIPS" ? "px" : "";
           styleValue = `${finalValue.elevation.value}${unit}`;
-        } else if ("type" in finalValue && finalValue.type) {
-          console.warn("type not implemented");
-          continue;
         } else if ("fontSize" in finalValue && finalValue.fontSize?.value) {
           styleValue = finalValue.fontSize.value.toString();
         } else if ("lineHeight" in finalValue && finalValue.lineHeight?.value) {
