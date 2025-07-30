@@ -53,6 +53,14 @@ export type ResolvedValue =
   | { lineHeight: Length }
   | { elevation: Length }
   | { axisValue: { tag: string; value?: string } }
+  | {
+      customComposite: {
+        properties: {
+          damping: { tokenName: string };
+          stiffness: { tokenName: string };
+        };
+      };
+    }
   | { undefined: true };
 
 export type Value = {
@@ -84,7 +92,8 @@ export interface Token {
     | "ELEVATION"
     | "AXIS_VALUE"
     | "DURATION"
-    | "NUMERIC";
+    | "NUMERIC"
+    | "CUSTOM_COMPOSITE";
   deprecationMessage?: {
     message: string;
     replacementTokenName: string;
@@ -478,6 +487,18 @@ export class DsdbManager {
           "type" in bestResolution.resolutionChain[0]
         ) {
           styleValue = bestResolution.resolutionChain[0].type;
+        } else if (
+          token.tokenValueType === "CUSTOM_COMPOSITE" &&
+          "customComposite" in bestResolution.resolutionChain[0]
+        ) {
+          styleValue = {
+            damping:
+              bestResolution.resolutionChain[0].customComposite.properties
+                .damping.tokenName,
+            stiffness:
+              bestResolution.resolutionChain[0].customComposite.properties
+                .stiffness.tokenName,
+          };
         } else if ("color" in finalValue && finalValue.color) {
           const { red, green, blue, alpha } = finalValue.color;
           if (alpha !== 1) {
@@ -514,12 +535,9 @@ export class DsdbManager {
           styleValue = finalValue.fontSize.value.toString();
         } else if ("lineHeight" in finalValue && finalValue.lineHeight?.value) {
           styleValue = finalValue.lineHeight.value.toString();
-        } else if (
-          "fontTracking" in finalValue &&
-          finalValue.fontTracking?.value
-        ) {
+        } else if ("fontTracking" in finalValue && finalValue.fontTracking) {
           styleValue = {
-            value: finalValue.fontTracking?.value,
+            value: finalValue.fontTracking?.value || 0,
             type: "tracking",
           };
         } else if ("fontNames" in finalValue && finalValue.fontNames) {
