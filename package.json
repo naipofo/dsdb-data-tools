@@ -1,5 +1,6 @@
 {
   "name": "dsdb-data-tools",
+  "homepage": "https://naipofo.github.io/dsdb-data-tools",
   "private": true,
   "type": "module",
   "scripts": {
