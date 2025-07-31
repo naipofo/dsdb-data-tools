@@ -182,6 +182,7 @@ export interface DisplayGroupTokenItem {
   name: string;
   displayName: string;
   tokenName: string;
+  tokenNameSuffix: string;
   tokenValueType: Token["tokenValueType"];
   description?: string;
   chain: TokenResolutionLink[];
@@ -328,14 +329,24 @@ export class DsdbManager {
           { orderInDisplayGroup: orderInDisplayGroup2 }
         ) => (orderInDisplayGroup ?? 0) - (orderInDisplayGroup2 ?? 0)
       )
-      .map(({ name, displayName, tokenName, tokenValueType, description }) => ({
-        name,
-        displayName,
-        tokenName,
-        tokenValueType,
-        description,
-        chain: this.resolveTokenChain(name) ?? [],
-      }));
+      .map(
+        ({
+          name,
+          displayName,
+          tokenName,
+          tokenNameSuffix,
+          tokenValueType,
+          description,
+        }) => ({
+          name,
+          displayName,
+          tokenName,
+          tokenNameSuffix,
+          tokenValueType,
+          description,
+          chain: this.resolveTokenChain(name) ?? [],
+        })
+      );
   }
 
   private getDisplayGroupTokens(groupName: string): DisplayGroupTokenItem[] {
@@ -446,9 +457,11 @@ export class DsdbManager {
       tokenSetName: set.tokenSetName,
       tokens: tokenList.map((token) => {
         const data = this.shallowCopyTokenMake(token, selectedContext);
-        const { tokenName, displayName, tokenValueType } = token;
+        const { tokenName, tokenNameSuffix, displayName, tokenValueType } =
+          token;
         return {
           tokenName,
+          tokenNameSuffix,
           displayName,
           tokenValueType,
           data,
